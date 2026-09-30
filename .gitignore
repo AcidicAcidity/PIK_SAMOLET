@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+backend/media/
+backend/staticfiles/
+backend/sent_emails/
+frontend/node_modules/
+frontend/dist/
+.DS_Store
+backend/server.log
