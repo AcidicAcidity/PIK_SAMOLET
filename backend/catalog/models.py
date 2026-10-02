@@ -27,7 +27,8 @@ class ResidentialComplex(models.Model):
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     features = models.TextField("Особенности (по одной на строку)", blank=True)
     accent_color = models.CharField("Акцентный цвет", max_length=16, default="#1f6feb")
-    image = models.ImageField("Обложка", upload_to="complexes/", blank=True)
+    image = models.ImageField("Обложка (файл)", upload_to="complexes/", blank=True)
+    image_url = models.URLField("Обложка (ссылка)", max_length=500, blank=True, help_text="Используется, если файл не загружен")
     is_published = models.BooleanField("Опубликован", default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -131,6 +132,47 @@ class Apartment(models.Model):
         pct = Decimal(user.discount_percent)
         final = (self.price * (Decimal("100") - pct) / Decimal("100")).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
         return final, pct
+
+
+def photo_src(obj):
+    """Относительный URL загруженного файла или внешняя ссылка."""
+    if getattr(obj, "image", None):
+        return obj.image.url
+    return getattr(obj, "url", "") or getattr(obj, "image_url", "") or ""
+
+
+class ComplexPhoto(models.Model):
+    complex = models.ForeignKey(ResidentialComplex, on_delete=models.CASCADE, related_name="photos", verbose_name="ЖК")
+    image = models.ImageField("Файл", upload_to="complexes/gallery/", blank=True)
+    url = models.URLField("Ссылка", max_length=500, blank=True)
+    caption = models.CharField("Подпись", max_length=200, blank=True)
+    order = models.PositiveSmallIntegerField("Порядок", default=0)
+
+    class Meta:
+        verbose_name = "Фото ЖК"
+        verbose_name_plural = "Фото ЖК"
+        ordering = ("order", "id")
+
+    @property
+    def src(self):
+        return photo_src(self)
+
+
+class ApartmentPhoto(models.Model):
+    apartment = models.ForeignKey(Apartment, on_delete=models.CASCADE, related_name="photos", verbose_name="Квартира")
+    image = models.ImageField("Файл", upload_to="apartments/", blank=True)
+    url = models.URLField("Ссылка", max_length=500, blank=True)
+    caption = models.CharField("Подпись", max_length=200, blank=True)
+    order = models.PositiveSmallIntegerField("Порядок", default=0)
+
+    class Meta:
+        verbose_name = "Фото квартиры"
+        verbose_name_plural = "Фото квартир"
+        ordering = ("order", "id")
+
+    @property
+    def src(self):
+        return photo_src(self)
 
 
 class Favorite(models.Model):

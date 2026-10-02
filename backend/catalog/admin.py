@@ -1,6 +1,16 @@
 from django.contrib import admin
 
-from .models import Apartment, Building, Favorite, ResidentialComplex
+from .models import Apartment, ApartmentPhoto, Building, ComplexPhoto, Favorite, ResidentialComplex
+
+
+class ComplexPhotoInline(admin.TabularInline):
+    model = ComplexPhoto
+    extra = 1
+
+
+class ApartmentPhotoInline(admin.TabularInline):
+    model = ApartmentPhoto
+    extra = 1
 
 
 class BuildingInline(admin.TabularInline):
@@ -13,7 +23,7 @@ class ComplexAdmin(admin.ModelAdmin):
     list_display = ("name", "district", "housing_class", "completion_year", "is_published")
     list_filter = ("housing_class", "is_published")
     prepopulated_fields = {"slug": ("name",)}
-    inlines = [BuildingInline]
+    inlines = [BuildingInline, ComplexPhotoInline]
 
 
 @admin.register(Building)
@@ -28,6 +38,7 @@ class ApartmentAdmin(admin.ModelAdmin):
     list_filter = ("status", "rooms", "finishing", "building__complex")
     search_fields = ("number",)
     list_editable = ("price", "status")
+    inlines = [ApartmentPhotoInline]
 
 
 admin.site.register(Favorite)

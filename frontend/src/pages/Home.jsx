@@ -7,7 +7,7 @@ import {
 import api, { errorText } from '../api/client'
 import CityArt from '../components/CityArt'
 import { ComplexCard } from '../components/Cards'
-import { CountUp, Field, Spinner } from '../components/ui'
+import { CountUp, Field, Photo, Spinner } from '../components/ui'
 import { useToast } from '../context/UiContext'
 import { date } from '../utils/format'
 
@@ -262,7 +262,9 @@ function Hero({ company }) {
             <button className="btn btn-accent" onClick={search}>Найти</button>
           </div>
         </div>
-        <div className="hero-art"><CityArt seed="hero-main" color="#f25c2b" variant="hero" /></div>
+        <div className="hero-art photo-art">
+          <Photo src="https://images.unsplash.com/photo-1624204386084-dd8c05e32226?auto=format&fit=crop&w=1600&q=80" alt="ЖК «Горизонт Сити»" fallback={<CityArt seed="hero-main" color="#f25c2b" variant="hero" />} />
+        </div>
       </div>
     </section>
   )
@@ -342,7 +344,7 @@ function Contacts({ company }) {
             <div className="contact-line"><div className="adv-icon"><Mail size={20} /></div><div><b>{company?.email}</b><div className="small muted">Ответим в течение часа</div></div></div>
             <div className="contact-line"><div className="adv-icon"><MapPin size={20} /></div><div><b>{company?.address}</b><div className="small muted">{company?.work_hours}</div></div></div>
             <div style={{ borderRadius: 20, overflow: 'hidden', flex: 1, minHeight: 180 }}>
-              <CityArt seed="office" color="#f25c2b" variant="card" />
+              <Photo src="https://images.unsplash.com/photo-1580216643062-cf460548a66a?auto=format&fit=crop&w=900&q=80" alt="Офис продаж" style={{ width: '100%', height: '100%', objectFit: 'cover' }} fallback={<CityArt seed="office" color="#f25c2b" variant="card" />} />
             </div>
           </div>
         </div>

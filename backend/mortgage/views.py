@@ -48,7 +48,7 @@ class MyApplicationViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixin
     pagination_class = None
 
     def get_queryset(self):
-        return MortgageApplication.objects.filter(user=self.request.user).select_related("program", "apartment__building__complex")
+        return MortgageApplication.objects.filter(user=self.request.user).select_related("program", "apartment__building__complex").prefetch_related("apartment__photos")
 
     def perform_create(self, serializer):
         app = serializer.save(user=self.request.user)

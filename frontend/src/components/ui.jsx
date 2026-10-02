@@ -115,3 +115,23 @@ export function Pagination({ page, count, pageSize = 12, onChange }) {
     </nav>
   )
 }
+
+/** Фото с плавным появлением и запасным вариантом, если картинка не загрузилась (нет интернета и т.п.) */
+export function Photo({ src, alt = '', fallback = null, className = '', style, onFail }) {
+  const [state, setState] = useState(src ? 'loading' : 'error')
+  useEffect(() => { setState(src ? 'loading' : 'error') }, [src])
+  if (state === 'error') return fallback
+  return (
+    <img
+      src={src} alt={alt} loading="lazy" decoding="async"
+      className={`photo ${state === 'loaded' ? 'is-loaded' : ''} ${className}`} style={style}
+      onLoad={() => setState('loaded')} onError={() => { setState('error'); onFail?.() }}
+    />
+  )
+}
+
+/** Подстановка ширины в ссылку Unsplash (для превью) */
+export function sized(src, w) {
+  if (!src || !src.includes('images.unsplash.com')) return src
+  return src.replace(/([?&])w=\d+/, `$1w=${w}`).concat(src.includes('w=') ? '' : `${src.includes('?') ? '&' : '?'}w=${w}`)
+}

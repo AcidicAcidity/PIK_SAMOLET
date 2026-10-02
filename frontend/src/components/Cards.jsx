@@ -7,6 +7,7 @@ import { useCompare, useToast } from '../context/UiContext'
 import { area, money, moneyShort, roomsLong } from '../utils/format'
 import CityArt from './CityArt'
 import FloorPlan from './FloorPlan'
+import { Photo, sized } from './ui'
 
 export function FavoriteButton({ apartment, onChange }) {
   const { user } = useAuth()
@@ -70,7 +71,7 @@ export function ApartmentCard({ a, onFavoriteChange }) {
   const discount = Number(a.discount_percent) > 0 && a.status === 'available'
   return (
     <Link to={`/apartments/${a.id}`} className="apt-card">
-      <div className="apt-plan">
+      <div className={`apt-plan ${a.photo ? 'has-photo' : ''}`}>
         <div className="top-badges">
           {a.status !== 'available' && <span className="badge badge-dark">{STATUS_LABEL[a.status]}</span>}
           {a.old_price && <span className="badge badge-accent">Скидка</span>}
@@ -80,7 +81,12 @@ export function ApartmentCard({ a, onFavoriteChange }) {
           <CompareButton id={a.id} />
           <FavoriteButton apartment={a} onChange={onFavoriteChange} />
         </div>
-        <FloorPlan apartment={a} showLabels={false} />
+        {a.photo ? (
+          <>
+            <Photo src={sized(a.photo, 700)} alt={`${roomsLong(a.rooms)}, ${a.area} м²`} fallback={<FloorPlan apartment={a} showLabels={false} />} />
+            <div className="plan-inset" aria-hidden="true"><FloorPlan apartment={a} showLabels={false} /></div>
+          </>
+        ) : <FloorPlan apartment={a} showLabels={false} />}
       </div>
       <div className="apt-info">
         <div className="apt-title">{roomsLong(a.rooms)}, {area(a.area)}</div>
@@ -102,7 +108,7 @@ export function ComplexCard({ c }) {
   return (
     <Link to={`/complexes/${c.slug}`} className="complex-card card-hover">
       <div className="complex-cover">
-        {c.image ? <img src={c.image} alt={c.name} /> : <CityArt seed={c.slug} color={c.accent_color} />}
+        <Photo src={sized(c.cover, 900)} alt={`ЖК «${c.name}»`} fallback={<CityArt seed={c.slug} color={c.accent_color} />} />
         <div className="badges">
           <span className="badge badge-glass">{c.housing_class_display}</span>
           {c.completion_year && <span className="badge badge-glass">Сдача {c.completion_year}</span>}

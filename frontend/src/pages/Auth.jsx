@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Eye, EyeOff, Lock, Mail, ShieldCheck } from 'lucide-react'
 import api, { errorText, fieldErrors } from '../api/client'
 import CityArt from '../components/CityArt'
-import { Field, Spinner } from '../components/ui'
+import { Field, Photo, Spinner } from '../components/ui'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/UiContext'
 
@@ -27,8 +27,8 @@ function Shell({ children, title = 'Личный кабинет покупате
             ))}
           </div>
         </div>
-        <div className="art" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '45%' }}>
-          <CityArt seed="auth" color="#f25c2b" variant="night" />
+        <div className="auth-art" aria-hidden="true">
+          <Photo src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} fallback={<CityArt seed="auth" color="#f25c2b" variant="night" />} />
         </div>
       </div>
       <div className="auth-form-wrap">{children}</div>

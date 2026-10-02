@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
+  ChevronLeft, Images,
   ArrowRight, BadgePercent, Bath, Building2, CalendarDays, Check, ChevronRight, Eye, Home as HomeIcon,
   Layers, Maximize2, Phone, Ruler, Sun, Train, Wallet,
 } from 'lucide-react'
 import api, { errorText } from '../api/client'
 import { ApartmentCard, CompareButton, FavoriteButton } from '../components/Cards'
 import FloorPlan from '../components/FloorPlan'
-import { Empty, Field, Modal, PageLoader, Spinner, StatusBadge } from '../components/ui'
+import { Empty, Field, Modal, PageLoader, Photo, Spinner, StatusBadge, sized } from '../components/ui'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/UiContext'
 import { area, money, roomsLong } from '../utils/format'
@@ -16,19 +17,20 @@ export default function ApartmentDetail() {
   const { id } = useParams()
   const [a, setA] = useState(null)
   const [error, setError] = useState(false)
-  const [tab, setTab] = useState('plan')
+  const [tab, setTab] = useState('photo')
   const [bookOpen, setBookOpen] = useState(false)
   const [leadOpen, setLeadOpen] = useState(false)
   const { user, refreshUser } = useAuth()
   const nav = useNavigate()
 
   const load = () => api.get(`/apartments/${id}/`).then((r) => setA(r.data)).catch(() => setError(true))
-  useEffect(() => { setA(null); setError(false); load() }, [id]) // eslint-disable-line
+  useEffect(() => { setA(null); setError(false); setTab('photo'); load() }, [id]) // eslint-disable-line
 
   if (error) return <div className="container section"><Empty icon={HomeIcon} title="Квартира не найдена" text="Возможно, она уже продана или ссылка устарела." action={<Link to="/apartments" className="btn">В каталог</Link>} /></div>
   if (!a) return <PageLoader />
 
   const hasDiscount = Number(a.discount_percent) > 0
+  const view = tab === 'photo' && !a.photos?.length ? 'plan' : tab
   const available = a.status === 'available'
   const specs = [
     ['Общая площадь', area(a.area)], ['Жилая площадь', a.living_area ? area(a.living_area) : '—'],
@@ -66,15 +68,16 @@ export default function ApartmentDetail() {
               </div>
             </div>
             <div className="plan-tabs segmented" role="tablist">
-              <button className={tab === 'plan' ? 'active' : ''} onClick={() => setTab('plan')}><Ruler size={16} /> Планировка</button>
-              <button className={tab === 'floor' ? 'active' : ''} onClick={() => setTab('floor')}><Layers size={16} /> На этаже</button>
+              {a.photos?.length > 0 && <button className={view === 'photo' ? 'active' : ''} onClick={() => setTab('photo')}><Images size={16} /> Фото</button>}
+              <button className={view === 'plan' ? 'active' : ''} onClick={() => setTab('plan')}><Ruler size={16} /> Планировка</button>
+              <button className={view === 'floor' ? 'active' : ''} onClick={() => setTab('floor')}><Layers size={16} /> На этаже</button>
             </div>
-            {tab === 'plan' ? (
-              <div className="plan-svg"><FloorPlan apartment={a} /></div>
-            ) : (
-              <FloorPosition a={a} />
-            )}
-            <p className="tiny muted center mt-16">Планировка схематична. Точные размеры — в договоре долевого участия.</p>
+            {view === 'photo' ? <Gallery photos={a.photos} onFail={() => setTab('plan')} />
+              : view === 'plan' ? <div className="plan-svg"><FloorPlan apartment={a} /></div>
+              : <FloorPosition a={a} />}
+            <p className="tiny muted center mt-16">
+              {view === 'photo' ? `Фото — пример ${a.finishing === 'none' ? 'помещения' : 'отделки «' + a.finishing_display + '»'} в проектах компании.` : 'Планировка схематична. Точные размеры — в договоре долевого участия.'}
+            </p>
           </div>
 
           <div className="card">
@@ -157,6 +160,35 @@ export default function ApartmentDetail() {
 
       <BookingModal open={bookOpen} onClose={() => setBookOpen(false)} a={a} onDone={() => { load(); refreshUser() }} />
       <LeadModal open={leadOpen} onClose={() => setLeadOpen(false)} apartment={a} />
+    </div>
+  )
+}
+
+function Gallery({ photos, onFail }) {
+  const [i, setI] = useState(0)
+  const go = (d) => setI((x) => (x + d + photos.length) % photos.length)
+  const p = photos[i]
+  return (
+    <div className="gallery">
+      <div className="gallery-main">
+        <Photo key={p.src} src={sized(p.src, 1400)} alt={p.caption} onFail={onFail} />
+        {photos.length > 1 && (
+          <>
+            <button className="icon-btn gallery-nav prev" onClick={() => go(-1)} aria-label="Предыдущее фото"><ChevronLeft size={20} /></button>
+            <button className="icon-btn gallery-nav next" onClick={() => go(1)} aria-label="Следующее фото"><ChevronRight size={20} /></button>
+          </>
+        )}
+        <div className="gallery-caption">{p.caption}<span>{i + 1} / {photos.length}</span></div>
+      </div>
+      {photos.length > 1 && (
+        <div className="gallery-thumbs">
+          {photos.map((ph, k) => (
+            <button key={ph.src + k} className={k === i ? 'active' : ''} onClick={() => setI(k)} aria-label={ph.caption}>
+              <Photo src={sized(ph.src, 240)} alt="" fallback={<span />} />
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

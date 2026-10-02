@@ -3,7 +3,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from django.db.models import Count, Max, Min, Q
 from rest_framework import serializers
 
-from .models import Apartment, Building, Favorite, ResidentialComplex
+from .models import Apartment, Building, Favorite, ResidentialComplex, photo_src
 
 
 def _lines(text):
@@ -22,17 +22,25 @@ class ComplexListSerializer(serializers.ModelSerializer):
     housing_class_display = serializers.CharField(source="get_housing_class_display", read_only=True)
     features_list = serializers.SerializerMethodField()
     stats = serializers.SerializerMethodField()
+    cover = serializers.SerializerMethodField()
 
     class Meta:
         model = ResidentialComplex
         fields = (
             "id", "name", "slug", "tagline", "address", "district", "metro", "metro_minutes",
-            "housing_class", "housing_class_display", "completion_year", "accent_color", "image",
+            "housing_class", "housing_class_display", "completion_year", "accent_color", "cover",
             "features_list", "stats",
         )
 
     def get_features_list(self, obj):
         return _lines(obj.features)
+
+    def get_cover(self, obj):
+        src = photo_src(obj)
+        if not src:
+            photos = list(obj.photos.all())
+            src = photos[0].src if photos else ""
+        return src
 
     def get_stats(self, obj):
         qs = Apartment.objects.filter(building__complex=obj)
@@ -51,7 +59,12 @@ class ComplexDetailSerializer(ComplexListSerializer):
     buildings = BuildingShortSerializer(many=True, read_only=True)
 
     class Meta(ComplexListSerializer.Meta):
-        fields = ComplexListSerializer.Meta.fields + ("description", "latitude", "longitude", "buildings")
+        fields = ComplexListSerializer.Meta.fields + ("description", "latitude", "longitude", "buildings", "gallery")
+
+    gallery = serializers.SerializerMethodField()
+
+    def get_gallery(self, obj):
+        return [{"src": p.src, "caption": p.caption} for p in obj.photos.all() if p.src]
 
 
 class ApartmentListSerializer(serializers.ModelSerializer):
@@ -69,6 +82,8 @@ class ApartmentListSerializer(serializers.ModelSerializer):
     discount_percent = serializers.SerializerMethodField()
     discounted_price = serializers.SerializerMethodField()
     is_favorite = serializers.SerializerMethodField()
+    plan_image = serializers.SerializerMethodField()
+    photo = serializers.SerializerMethodField()
 
     class Meta:
         model = Apartment
@@ -77,7 +92,7 @@ class ApartmentListSerializer(serializers.ModelSerializer):
             "price", "old_price", "price_per_m2", "discount_percent", "discounted_price",
             "status", "status_display", "finishing", "finishing_display",
             "complex_id", "complex_name", "complex_slug", "accent_color", "building", "building_number",
-            "completion_quarter", "plan_image", "is_favorite",
+            "completion_quarter", "plan_image", "photo", "is_favorite",
         )
 
     def _pct(self):
@@ -89,6 +104,13 @@ class ApartmentListSerializer(serializers.ModelSerializer):
     def get_discounted_price(self, obj):
         pct = self._pct()
         return (obj.price * (100 - pct) / 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+
+    def get_plan_image(self, obj):
+        return obj.plan_image.url if obj.plan_image else None
+
+    def get_photo(self, obj):
+        photos = list(obj.photos.all())  # prefetch_related в queryset
+        return photos[0].src if photos else None
 
     def get_is_favorite(self, obj):
         return obj.id in self.context.get("favorite_ids", set())
@@ -103,8 +125,13 @@ class ApartmentDetailSerializer(ApartmentListSerializer):
     class Meta(ApartmentListSerializer.Meta):
         fields = ApartmentListSerializer.Meta.fields + (
             "living_area", "ceiling_height", "bathrooms", "balcony", "window_view", "description",
-            "complex", "building_info", "similar", "has_active_booking",
+            "complex", "building_info", "similar", "has_active_booking", "photos",
         )
+
+    photos = serializers.SerializerMethodField()
+
+    def get_photos(self, obj):
+        return [{"src": p.src, "caption": p.caption} for p in obj.photos.all() if p.src]
 
     def get_complex(self, obj):
         c = obj.building.complex
@@ -112,12 +139,12 @@ class ApartmentDetailSerializer(ApartmentListSerializer):
             "id": c.id, "name": c.name, "slug": c.slug, "address": c.address, "district": c.district,
             "metro": c.metro, "metro_minutes": c.metro_minutes,
             "housing_class_display": c.get_housing_class_display(), "features_list": _lines(c.features),
-            "accent_color": c.accent_color,
+            "accent_color": c.accent_color, "cover": ComplexListSerializer().get_cover(c),
         }
 
     def get_similar(self, obj):
         qs = (
-            Apartment.objects.select_related("building__complex")
+            Apartment.objects.select_related("building__complex").prefetch_related("photos")
             .filter(rooms=obj.rooms, status=Apartment.Status.AVAILABLE)
             .exclude(pk=obj.pk)
             .order_by("?")[:4]

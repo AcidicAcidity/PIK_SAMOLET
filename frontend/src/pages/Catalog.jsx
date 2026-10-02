@@ -84,7 +84,7 @@ export default function Catalog() {
             placeholder={[facets ? (facets.price_min / 1e6).toFixed(1) : 'от', facets ? (facets.price_max / 1e6).toFixed(0) : 'до']} />
           <RangeFilter title="Площадь, м²" k="area" get={get} set={set}
             placeholder={[facets ? Math.floor(facets.area_min) : 'от', facets ? Math.ceil(facets.area_max) : 'до']} />
-          <RangeFilter title="Этаж" k="floor" get={get} set={set} placeholder={['от', facets?.floor_max || 'до']} />
+          <RangeFilter title="Этаж" k="floor" get={get} set={set} placeholder={[1, facets?.floor_max || '']} />
           <div>
             <h4>Отделка</h4>
             <div className="stack" style={{ gap: 10 }}>

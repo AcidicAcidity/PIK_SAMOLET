@@ -4,7 +4,7 @@ import { ArrowRight, Building2, CalendarDays, Check, ChevronRight, MapPin, Train
 import api from '../api/client'
 import CityArt from '../components/CityArt'
 import { ApartmentCard, ComplexCard } from '../components/Cards'
-import { Empty, PageLoader } from '../components/ui'
+import { Empty, PageLoader, Photo, sized } from '../components/ui'
 import { moneyShort, num, roomsLabel } from '../utils/format'
 
 export function ComplexList() {
@@ -62,7 +62,7 @@ export function ComplexDetail() {
               <a href="#apartments" className="btn btn-white btn-lg">Смотреть квартиры <ArrowRight size={18} /></a>
             </div>
           </div>
-          <div className="hero-art">{c.image ? <img src={c.image} alt={c.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <CityArt seed={c.slug} color={c.accent_color} />}</div>
+          <div className="hero-art photo-art"><Photo src={c.cover} alt={`ЖК «${c.name}»`} fallback={<CityArt seed={c.slug} color={c.accent_color} />} /></div>
         </div>
         <div className="stats-strip">
           <div className="stat"><b>{c.stats.available}</b><span>квартир в продаже</span></div>
@@ -99,6 +99,20 @@ export function ComplexDetail() {
           </div>
         </div>
       </section>
+
+      {c.gallery?.length > 1 && (
+        <section className="container" style={{ paddingBottom: 72 }}>
+          <div className="section-head"><div><div className="eyebrow">Галерея</div><h2>Как выглядит комплекс</h2></div></div>
+          <div className="complex-gallery">
+            {c.gallery.map((g, i) => (
+              <figure key={g.src + i} className={i === 0 ? 'wide' : ''}>
+                <Photo src={sized(g.src, i === 0 ? 1400 : 800)} alt={g.caption} fallback={<CityArt seed={`${c.slug}-${i}`} color={c.accent_color} />} />
+                {g.caption && <figcaption>{g.caption}</figcaption>}
+              </figure>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="container" id="apartments">
         <div className="section-head">

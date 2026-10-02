@@ -22,7 +22,7 @@ class MyBookingViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.Re
 
     def get_queryset(self):
         Booking.expire_overdue()
-        return Booking.objects.filter(user=self.request.user).select_related("apartment__building__complex", "manager", "user")
+        return Booking.objects.filter(user=self.request.user).select_related("apartment__building__complex", "manager", "user").prefetch_related("apartment__photos")
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -60,7 +60,7 @@ class ManagerBookingViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, vi
 
     def get_queryset(self):
         Booking.expire_overdue()
-        return Booking.objects.select_related("apartment__building__complex", "manager", "user")
+        return Booking.objects.select_related("apartment__building__complex", "manager", "user").prefetch_related("apartment__photos")
 
     def _act(self, request, allowed, fn, subject):
         booking = self.get_object()

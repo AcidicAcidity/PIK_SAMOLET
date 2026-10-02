@@ -9,6 +9,7 @@ from django.db import transaction
 from accounts.models import LoyaltyLevel, User
 from bookings.models import Booking
 from catalog.models import Apartment, Building, Favorite, ResidentialComplex
+from core.demo_photos import ensure_photos
 from core.models import CompanyInfo, Lead, News
 from mortgage.models import MortgageApplication, MortgageProgram, annuity
 
@@ -171,6 +172,7 @@ class Command(BaseCommand):
             ResidentialComplex.objects.all().delete()
             MortgageProgram.objects.all().delete()
         elif ResidentialComplex.objects.exists():
+            ensure_photos(self.stdout)
             self.stdout.write(self.style.WARNING("Данные уже есть — пропускаю. Используйте --reset для пересоздания."))
             return
 
@@ -285,6 +287,7 @@ class Command(BaseCommand):
         Lead.objects.create(name="Сергей", phone="+7 911 123-45-67", topic="visit", message="Хочу посмотреть шоурум в субботу.")
         Lead.objects.create(name="Наталья", phone="+7 912 765-43-21", topic="mortgage", message="Интересует семейная ипотека.")
 
+        ensure_photos(self.stdout)
         self.stdout.write(self.style.SUCCESS(
             f"Готово: ЖК {ResidentialComplex.objects.count()}, квартир {Apartment.objects.count()}, "
             f"программ {MortgageProgram.objects.count()}."

@@ -35,7 +35,7 @@ class UserPricingContextMixin:
 
 
 class ComplexViewSet(viewsets.ModelViewSet):
-    queryset = ResidentialComplex.objects.filter(is_published=True).prefetch_related("buildings")
+    queryset = ResidentialComplex.objects.filter(is_published=True).prefetch_related("buildings", "photos")
     permission_classes = [IsManagerOrReadOnly]
     lookup_field = "slug"
     pagination_class = None
@@ -62,7 +62,7 @@ class BuildingViewSet(viewsets.ModelViewSet):
 
 
 class ApartmentViewSet(UserPricingContextMixin, viewsets.ModelViewSet):
-    queryset = Apartment.objects.select_related("building__complex").all()
+    queryset = Apartment.objects.select_related("building__complex").prefetch_related("photos").all()
     permission_classes = [IsManagerOrReadOnly]
     filterset_class = ApartmentFilter
     ordering_fields = ("price", "area", "floor", "rooms", "created_at")
@@ -116,7 +116,7 @@ class FavoriteViewSet(UserPricingContextMixin, mixins.ListModelMixin, mixins.Des
     pagination_class = None
 
     def get_queryset(self):
-        return Favorite.objects.filter(user=self.request.user).select_related("apartment__building__complex")
+        return Favorite.objects.filter(user=self.request.user).select_related("apartment__building__complex").prefetch_related("apartment__photos")
 
 
 class CompareView(APIView):
@@ -127,7 +127,7 @@ class CompareView(APIView):
             ids = [int(x) for x in request.query_params.get("ids", "").split(",") if x.strip()][:4]
         except ValueError:
             return Response({"detail": "Некорректный список id."}, status=400)
-        qs = Apartment.objects.select_related("building__complex").filter(id__in=ids)
+        qs = Apartment.objects.select_related("building__complex").prefetch_related("photos").filter(id__in=ids)
         ctx = {"request": request}
         if request.user.is_authenticated:
             ctx["discount_percent"] = request.user.discount_percent

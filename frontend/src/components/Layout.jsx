@@ -26,6 +26,9 @@ export function Header() {
   const loc = useLocation()
   const nav = useNavigate()
   const ref = useRef(null)
+  const inManager = loc.pathname.startsWith('/manager')
+  const toPanel = isAdmin && inManager ? '/admin' : '/manager'
+  const panelLabel = isAdmin && inManager ? 'Админ-панель' : 'Панель'
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)
@@ -49,8 +52,8 @@ export function Header() {
           </nav>
           <div className="header-actions">
             {isManager && (
-              <Link to={isAdmin && loc.pathname.startsWith('/manager') ? '/admin' : '/manager'} className="btn btn-sm btn-outline hide-sm">
-                <LayoutDashboard size={16} /> {isAdmin && loc.pathname.startsWith('/manager') ? 'Админ-панель' : 'Панель менеджера'}
+              <Link to={toPanel} className="btn btn-sm btn-outline panel-link hide-sm" title={panelLabel}>
+                <LayoutDashboard size={16} /><span className="label">{panelLabel}</span>
               </Link>
             )}
             <Link to="/compare" className={`icon-btn hide-sm ${compare.ids.length ? 'active' : ''}`} title="Сравнение" aria-label="Сравнение">
