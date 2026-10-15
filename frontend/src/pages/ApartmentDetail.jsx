@@ -223,10 +223,16 @@ function MiniMortgage({ price, apartmentId }) {
   const [downPct, setDownPct] = useState(20)
   const [term, setTerm] = useState(25)
   const [result, setResult] = useState(null)
+  const [calcError, setCalcError] = useState('')
 
   useEffect(() => {
-    api.get('/mortgage/programs/').then((r) => { setPrograms(r.data); setProgramId(r.data[0]?.id || '') })
-  }, [])
+    api.get('/mortgage/programs/').then((r) => {
+      setPrograms(r.data)
+      // по умолчанию — самая выгодная программа, лимит которой подходит под стоимость квартиры
+      const fits = r.data.find((p) => Number(p.max_amount) >= price * (1 - Number(p.min_down_payment_percent) / 100))
+      setProgramId((fits || r.data[0])?.id || '')
+    })
+  }, [price])
   const program = programs.find((p) => String(p.id) === String(programId))
   const minPct = program ? Number(program.min_down_payment_percent) : 10
   useEffect(() => { if (downPct < minPct) setDownPct(minPct) }, [minPct]) // eslint-disable-line
@@ -237,7 +243,8 @@ function MiniMortgage({ price, apartmentId }) {
       api.post('/mortgage/calculate/', {
         property_price: price, down_payment: Math.round((price * Math.max(downPct, minPct)) / 100),
         term_years: Math.min(term, program.max_term_years), program: program.id,
-      }).then((r) => setResult(r.data)).catch(() => setResult(null))
+      }).then((r) => { setResult(r.data); setCalcError('') })
+        .catch((e) => { setResult(null); setCalcError(errorText(e, 'Не удалось рассчитать платёж.')) })
     }, 250)
     return () => clearTimeout(t)
   }, [price, downPct, term, programId]) // eslint-disable-line
@@ -262,6 +269,7 @@ function MiniMortgage({ price, apartmentId }) {
         <div><div className="small muted">Платёж в месяц</div><div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.03em' }}>{result ? money(result.monthly_payment) : '—'}</div></div>
         <Link to={`/mortgage?apartment=${apartmentId}&price=${price}`} className="link small">Подробнее <ArrowRight size={14} /></Link>
       </div>
+      {calcError && <div className="small mt-8" style={{ color: 'var(--danger)' }}>{calcError}</div>}
     </div>
   )
 }

@@ -396,8 +396,8 @@ input[type=range]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 
 .auth-form-wrap { display: grid; place-items: center; padding: 48px 24px; }
 .auth-form { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 18px; }
 .auth-form h1 { font-size: 34px; }
-.code-inputs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
-.code-inputs input { height: 64px; text-align: center; font-size: 28px; font-weight: 700; border-radius: 14px; border: 1px solid var(--line-2); background: #fff; outline: none; transition: all .15s; }
+.code-inputs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+.code-inputs input { width: 100%; min-width: 0; padding: 0; height: 64px; text-align: center; font-size: 28px; font-weight: 700; border-radius: 14px; border: 1px solid var(--line-2); background: #fff; outline: none; transition: all .15s; }
 .code-inputs input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-50); }
 .code-inputs.error input { border-color: var(--danger); animation: shake .35s; }
 @keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }

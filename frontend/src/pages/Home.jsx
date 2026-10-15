@@ -29,7 +29,7 @@ export default function Home() {
   const c = company
   return (
     <>
-      <Hero company={c} />
+      <Hero company={c} heroSrc={complexes.find((x) => x.slug === 'gorizont-siti')?.cover || complexes[0]?.cover} />
 
       {/* Цифры */}
       <section className="container">
@@ -219,12 +219,12 @@ export default function Home() {
       </section>
 
       <Faq items={c?.faq || []} />
-      <Contacts company={c} />
+      <Contacts company={c} officeSrc={complexes.find((x) => x.slug === 'severnyi-park')?.cover} />
     </>
   )
 }
 
-function Hero({ company }) {
+function Hero({ company, heroSrc }) {
   const nav = useNavigate()
   const [rooms, setRooms] = useState([])
   const [budget, setBudget] = useState('')
@@ -263,7 +263,7 @@ function Hero({ company }) {
           </div>
         </div>
         <div className="hero-art photo-art">
-          <Photo src="https://images.unsplash.com/photo-1624204386084-dd8c05e32226?auto=format&fit=crop&w=1600&q=80" alt="ЖК «Горизонт Сити»" fallback={<CityArt seed="hero-main" color="#f25c2b" variant="hero" />} />
+          <Photo src={heroSrc} alt="ЖК «Горизонт Сити»" fallback={<CityArt seed="hero-main" color="#f25c2b" variant="hero" />} />
         </div>
       </div>
     </section>
@@ -290,7 +290,7 @@ function Faq({ items }) {
   )
 }
 
-function Contacts({ company }) {
+function Contacts({ company, officeSrc }) {
   const toast = useToast()
   const [form, setForm] = useState({ name: '', phone: '', topic: 'consult', message: '' })
   const [sending, setSending] = useState(false)
@@ -344,7 +344,7 @@ function Contacts({ company }) {
             <div className="contact-line"><div className="adv-icon"><Mail size={20} /></div><div><b>{company?.email}</b><div className="small muted">Ответим в течение часа</div></div></div>
             <div className="contact-line"><div className="adv-icon"><MapPin size={20} /></div><div><b>{company?.address}</b><div className="small muted">{company?.work_hours}</div></div></div>
             <div style={{ borderRadius: 20, overflow: 'hidden', flex: 1, minHeight: 180 }}>
-              <Photo src="https://images.unsplash.com/photo-1580216643062-cf460548a66a?auto=format&fit=crop&w=900&q=80" alt="Офис продаж" style={{ width: '100%', height: '100%', objectFit: 'cover' }} fallback={<CityArt seed="office" color="#f25c2b" variant="card" />} />
+              <Photo src={officeSrc} alt="Офис продаж" style={{ width: '100%', height: '100%', objectFit: 'cover' }} fallback={<CityArt seed="office" color="#f25c2b" variant="card" />} />
             </div>
           </div>
         </div>

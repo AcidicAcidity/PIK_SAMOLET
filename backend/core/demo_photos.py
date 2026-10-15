@@ -1,9 +1,37 @@
 """Демо-фотографии (Unsplash, лицензия Unsplash License — бесплатное использование).
 
-Фото подгружаются по ссылке в браузере пользователя. Любое фото можно заменить
-в Django admin: загрузить свой файл или указать другую ссылку.
+Файлы фото лежат в проекте: backend/core/seed_photos/<id>.jpg. При заполнении базы они
+копируются в MEDIA_ROOT/demo/ и отдаются самим сайтом — интернет для них не нужен.
+Ссылка на оригинал на Unsplash хранится только для справки (поле «Ссылка»).
+Любое фото можно заменить в Django admin: загрузить свой файл.
 """
+import os
+import shutil
+from pathlib import Path
+
+from django.conf import settings
+from django.db.models import Q
+
 from catalog.models import Apartment, ApartmentPhoto, ComplexPhoto, ResidentialComplex
+
+SEED_DIR = Path(__file__).resolve().parent / "seed_photos"
+
+
+def local_photo(photo_id):
+    """Копирует фото из проекта в media/demo/ и возвращает имя файла для ImageField ('' если файла нет)."""
+    src = SEED_DIR / f"{photo_id}.jpg"
+    if not src.is_file():
+        return ""
+    name = f"demo/{photo_id}.jpg"
+    dst = Path(settings.MEDIA_ROOT) / name
+    if not dst.is_file() or dst.stat().st_size != src.stat().st_size:
+        os.makedirs(dst.parent, exist_ok=True)
+        shutil.copyfile(src, dst)
+    return name
+
+
+def _pid(url):
+    return url.split("photo-", 1)[1].split("?", 1)[0] if "photo-" in url else ""
 
 
 def u(photo_id, w=1600):
@@ -65,21 +93,24 @@ INTERIORS = {
 
 
 def ensure_photos(stdout=None):
-    """Добавляет демо-фото комплексам и квартирам, у которых фото ещё нет (идемпотентно)."""
+    """Добавляет демо-фото комплексам и квартирам и привязывает их к локальным файлам (идемпотентно)."""
     added = 0
-    demo_urls = {u(pid) for items in COMPLEX_PHOTOS.values() for pid, _ in items}
+    demo_ids = {pid for items in COMPLEX_PHOTOS.values() for pid, _ in items}
+
+    def is_demo(p):
+        return _pid(p.url) in demo_ids and (not p.image or p.image.name.startswith("demo/"))
+
     for c in ResidentialComplex.objects.all():
         items = COMPLEX_PHOTOS.get(c.slug, COMPLEX_PHOTOS["severnyi-park"])
         current = list(c.photos.all())
         if current:
             # Обновляем только демо-фото; загруженные/изменённые в админке не трогаем
-            wanted = [u(pid) for pid, _ in items]
-            is_demo = all(not p.image and p.url in demo_urls for p in current)
-            if not is_demo or [p.url for p in current] == wanted:
+            if not all(is_demo(p) for p in current) or [_pid(p.url) for p in current] == [pid for pid, _ in items]:
                 continue
             c.photos.all().delete()
         ComplexPhoto.objects.bulk_create(
-            ComplexPhoto(complex=c, url=u(pid), caption=cap, order=i) for i, (pid, cap) in enumerate(items)
+            ComplexPhoto(complex=c, url=u(pid), image=local_photo(pid), caption=cap, order=i)
+            for i, (pid, cap) in enumerate(items)
         )
         added += len(items)
 
@@ -90,9 +121,24 @@ def ensure_photos(stdout=None):
         shift = a.id % len(pool)
         ordered = pool[shift:] + pool[:shift]
         for i, (pid, cap) in enumerate(ordered[:4]):
-            batch.append(ApartmentPhoto(apartment_id=a.id, url=u(pid, 1400), caption=cap, order=i))
+            batch.append(ApartmentPhoto(apartment_id=a.id, url=u(pid, 1400), image=local_photo(pid), caption=cap, order=i))
     ApartmentPhoto.objects.bulk_create(batch, batch_size=500)
     added += len(batch)
-    if stdout and added:
-        stdout.write(f"Добавлено демо-фото: {added}")
+
+    # Уже существующие демо-фото (из прошлых версий, где были только ссылки) переводим на локальные файлы
+    linked = 0
+    all_ids = demo_ids | {pid for items in INTERIORS.values() for pid, _ in items}
+    for pid in all_ids:
+        name = local_photo(pid)
+        if not name:
+            continue
+        for model in (ComplexPhoto, ApartmentPhoto):
+            linked += (
+                model.objects.filter(url__contains=f"photo-{pid}")
+                .filter(Q(image="") | Q(image__startswith="demo/"))
+                .exclude(image=name)
+                .update(image=name)
+            )
+    if stdout and (added or linked):
+        stdout.write(f"Демо-фото: добавлено {added}, переведено на локальные файлы {linked}")
     return added

@@ -14,6 +14,10 @@ const DEMO = [
 ]
 
 function Shell({ children, title = 'Личный кабинет покупателя', text = 'Бронирование онлайн, персональные скидки, заявки на ипотеку и история сделок — в одном месте.' }) {
+  const [bg, setBg] = useState(null)
+  useEffect(() => {
+    api.get('/complexes/').then((r) => setBg(r.data.find((c) => c.slug === 'rechnoi-kvartal')?.cover || r.data[0]?.cover)).catch(() => {})
+  }, [])
   return (
     <div className="auth-page">
       <div className="auth-side">
@@ -28,7 +32,7 @@ function Shell({ children, title = 'Личный кабинет покупате
           </div>
         </div>
         <div className="auth-art" aria-hidden="true">
-          <Photo src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} fallback={<CityArt seed="auth" color="#f25c2b" variant="night" />} />
+          <Photo src={bg} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} fallback={<CityArt seed="auth" color="#f25c2b" variant="night" />} />
         </div>
       </div>
       <div className="auth-form-wrap">{children}</div>
